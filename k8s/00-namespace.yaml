@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: sistema-despachos
+  labels:
+    project: sistema-ventas-despacho
+    course: ISY1101

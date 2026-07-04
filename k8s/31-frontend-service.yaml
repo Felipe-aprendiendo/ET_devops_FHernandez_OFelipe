@@ -1,0 +1,18 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: frontend
+  namespace: sistema-despachos
+  labels:
+    app: frontend
+spec:
+  # LoadBalancer: AWS provisiona automáticamente un NLB al aplicar este manifiesto en EKS.
+  # Para obtener la URL pública:
+  #   kubectl get svc frontend -n sistema-despachos -o jsonpath='{.status.loadBalancer.ingress[0].hostname}'
+  type: LoadBalancer
+  selector:
+    app: frontend
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 80

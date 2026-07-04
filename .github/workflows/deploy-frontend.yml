@@ -1,0 +1,73 @@
+# =============================================================
+# GitHub Secrets requeridos (se configuran UNA SOLA VEZ en este repositorio):
+#   AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_SESSION_TOKEN
+#   (AWS Academy Learner Lab — renovar cada sesión)
+#
+# ADVERTENCIA — Prerequisito de infraestructura:
+#   El Deployment "frontend" debe existir en el clúster antes del primer push a deploy.
+#   Aplicar kubectl apply -f k8s/ al menos una vez primero.
+# =============================================================
+
+name: Deploy — Frontend
+
+on:
+  push:
+    branches:
+      - deploy
+    paths:
+      - "front_despacho/**"
+
+jobs:
+  build-push-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout del código
+        uses: actions/checkout@v4
+
+      - name: Configurar credenciales AWS
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
+          aws-region: us-east-1
+
+      - name: Login a Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build y push de imagen a ECR
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          ECR_REPOSITORY: sistema-despachos-frontend
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          # No se pasan --build-arg de VITE_API_*: el proxy de Nginx resuelve los backends.
+          docker build \
+            -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG \
+            -t $ECR_REGISTRY/$ECR_REPOSITORY:latest \
+            front_despacho
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:latest
+
+      - name: Instalar kubectl
+        uses: azure/setup-kubectl@v4
+        with:
+          version: 'v1.30.0'
+
+      - name: Configurar kubeconfig para EKS
+        run: aws eks update-kubeconfig --name <NOMBRE_CLUSTER_EKS> --region us-east-1
+
+      - name: Deploy a EKS
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          ECR_REPOSITORY: sistema-despachos-frontend
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          kubectl set image deployment/frontend \
+            frontend=$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG \
+            --namespace sistema-despachos
+          kubectl rollout status deployment/frontend \
+            --namespace sistema-despachos \
+            --timeout=120s

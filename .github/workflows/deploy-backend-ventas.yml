@@ -1,0 +1,79 @@
+# =============================================================
+# GitHub Secrets requeridos (se configuran UNA SOLA VEZ en este repositorio):
+#   AWS_ACCESS_KEY_ID     — Clave de acceso AWS (AWS Academy Learner Lab)
+#   AWS_SECRET_ACCESS_KEY — Clave secreta AWS
+#   AWS_SESSION_TOKEN     — Token de sesión (OBLIGATORIO en Learner Lab;
+#                           las credenciales son temporales y expiran ~4h)
+#
+# ADVERTENCIA — Prerequisito de infraestructura:
+#   Este pipeline hace "kubectl set image" sobre el Deployment "backend-ventas".
+#   Ese Deployment DEBE existir previamente (aplicar kubectl apply -f k8s/ al menos
+#   una vez antes del primer push a la rama deploy).
+# =============================================================
+
+name: Deploy — Backend Ventas
+
+on:
+  push:
+    branches:
+      - deploy
+    # Solo se dispara cuando hay cambios en la carpeta de este componente
+    paths:
+      - "back-Ventas_SpringBoot/**"
+
+jobs:
+  build-push-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout del código
+        uses: actions/checkout@v4
+
+      - name: Configurar credenciales AWS
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
+          aws-region: us-east-1
+
+      - name: Login a Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build y push de imagen a ECR
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          ECR_REPOSITORY: sistema-despachos-ventas
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          # El contexto de build apunta a la subcarpeta del componente dentro del monorepo
+          docker build \
+            -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG \
+            -t $ECR_REGISTRY/$ECR_REPOSITORY:latest \
+            back-Ventas_SpringBoot/Springboot-API-REST
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:latest
+
+      - name: Instalar kubectl
+        uses: azure/setup-kubectl@v4
+        with:
+          # v1.30.x compatible con clústeres EKS 1.29–1.31 (±1 versión menor)
+          version: 'v1.30.0'
+
+      - name: Configurar kubeconfig para EKS
+        # Reemplaza <NOMBRE_CLUSTER_EKS> con el nombre real de tu clúster
+        run: aws eks update-kubeconfig --name <NOMBRE_CLUSTER_EKS> --region us-east-1
+
+      - name: Deploy a EKS
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          ECR_REPOSITORY: sistema-despachos-ventas
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          kubectl set image deployment/backend-ventas \
+            backend-ventas=$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG \
+            --namespace sistema-despachos
+          kubectl rollout status deployment/backend-ventas \
+            --namespace sistema-despachos \
+            --timeout=120s
