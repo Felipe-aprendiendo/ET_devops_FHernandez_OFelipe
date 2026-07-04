@@ -1,0 +1,18 @@
+apiVersion: v1
+kind: Service
+metadata:
+  # IMPORTANTE: "mysql" debe coincidir EXACTAMENTE con DB_ENDPOINT en los Secrets
+  # db-credentials-ventas (01-secret-db-ventas.yaml) y db-credentials-despachos
+  # (02-secret-db-despachos.yaml).
+  name: mysql
+  namespace: sistema-despachos
+  labels:
+    app: mysql
+spec:
+  type: ClusterIP
+  selector:
+    app: mysql
+  ports:
+    - protocol: TCP
+      port: 3306
+      targetPort: 3306

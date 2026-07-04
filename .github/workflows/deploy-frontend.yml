@@ -2,6 +2,7 @@
 # GitHub Secrets requeridos (se configuran UNA SOLA VEZ en este repositorio):
 #   AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_SESSION_TOKEN
 #   (AWS Academy Learner Lab — renovar cada sesión)
+#   EKS_CLUSTER_NAME — Nombre del clúster EKS (usado en aws eks update-kubeconfig)
 #
 # ADVERTENCIA — Prerequisito de infraestructura:
 #   El Deployment "frontend" debe existir en el clúster antes del primer push a deploy.
@@ -57,7 +58,7 @@ jobs:
           version: 'v1.30.0'
 
       - name: Configurar kubeconfig para EKS
-        run: aws eks update-kubeconfig --name <NOMBRE_CLUSTER_EKS> --region us-east-1
+        run: aws eks update-kubeconfig --name ${{ secrets.EKS_CLUSTER_NAME }} --region us-east-1
 
       - name: Deploy a EKS
         env:

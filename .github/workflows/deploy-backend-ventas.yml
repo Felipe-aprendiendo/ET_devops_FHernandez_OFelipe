@@ -4,6 +4,7 @@
 #   AWS_SECRET_ACCESS_KEY — Clave secreta AWS
 #   AWS_SESSION_TOKEN     — Token de sesión (OBLIGATORIO en Learner Lab;
 #                           las credenciales son temporales y expiran ~4h)
+#   EKS_CLUSTER_NAME      — Nombre del clúster EKS (usado en aws eks update-kubeconfig)
 #
 # ADVERTENCIA — Prerequisito de infraestructura:
 #   Este pipeline hace "kubectl set image" sobre el Deployment "backend-ventas".
@@ -28,6 +29,17 @@ jobs:
     steps:
       - name: Checkout del código
         uses: actions/checkout@v4
+
+      - name: Configurar JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+          cache: maven
+
+      - name: Ejecutar tests
+        working-directory: back-Ventas_SpringBoot/Springboot-API-REST
+        run: mvn -B test
 
       - name: Configurar credenciales AWS
         uses: aws-actions/configure-aws-credentials@v4
@@ -62,8 +74,7 @@ jobs:
           version: 'v1.30.0'
 
       - name: Configurar kubeconfig para EKS
-        # Reemplaza <NOMBRE_CLUSTER_EKS> con el nombre real de tu clúster
-        run: aws eks update-kubeconfig --name <NOMBRE_CLUSTER_EKS> --region us-east-1
+        run: aws eks update-kubeconfig --name ${{ secrets.EKS_CLUSTER_NAME }} --region us-east-1
 
       - name: Deploy a EKS
         env:

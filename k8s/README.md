@@ -73,10 +73,13 @@ kubectl apply -f https://github.com/kubernetes-sigs/metrics-server/releases/late
 ## Aplicar los manifiestos
 
 ```bash
-# 1. Editar los Secrets con los valores reales del RDS
+# 1. Editar los Secrets con los valores reales
 #    (NUNCA commitear con datos reales — solo editar localmente antes del apply)
+#    IMPORTANTE: DB_PASSWORD en 01 y 02 debe coincidir EXACTAMENTE con
+#    MYSQL_ROOT_PASSWORD en 03 — son la misma credencial de MySQL compartida.
 nano k8s/01-secret-db-ventas.yaml
 nano k8s/02-secret-db-despachos.yaml
+nano k8s/03-secret-mysql-root.yaml
 
 # 2. Aplicar todo el directorio en orden numérico
 kubectl apply -f k8s/
@@ -85,6 +88,9 @@ kubectl apply -f k8s/
 kubectl apply -f k8s/00-namespace.yaml
 kubectl apply -f k8s/01-secret-db-ventas.yaml
 kubectl apply -f k8s/02-secret-db-despachos.yaml
+kubectl apply -f k8s/03-secret-mysql-root.yaml
+kubectl apply -f k8s/05-mysql-deployment.yaml
+kubectl apply -f k8s/06-mysql-service.yaml
 kubectl apply -f k8s/10-backend-ventas-deployment.yaml
 kubectl apply -f k8s/11-backend-ventas-service.yaml
 kubectl apply -f k8s/12-backend-ventas-hpa.yaml
@@ -95,6 +101,11 @@ kubectl apply -f k8s/30-frontend-deployment.yaml
 kubectl apply -f k8s/31-frontend-service.yaml
 kubectl apply -f k8s/32-frontend-hpa.yaml
 ```
+
+> La base de datos es un único contenedor MySQL (Deployment `mysql`, Service
+> `mysql`) corriendo dentro del propio clúster, con almacenamiento `emptyDir`
+> (sin PVC/EBS). Ambos backends crean su base automáticamente gracias a
+> `createDatabaseIfNotExist=true`, usando el mismo usuario `root` compartido.
 
 ---
 

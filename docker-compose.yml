@@ -1,0 +1,79 @@
+# =============================================================
+# docker-compose.yml — Entorno local de desarrollo
+# Levanta MySQL + los 2 backends Spring Boot + el frontend (Nginx),
+# replicando localmente la misma arquitectura usada en Kubernetes.
+# =============================================================
+
+services:
+  mysql:
+    image: mysql:8
+    environment:
+      # Password de desarrollo simple — SOLO para uso local.
+      # NUNCA reutilizar este valor en producción/K8s.
+      MYSQL_ROOT_PASSWORD: root_dev_password
+    ports:
+      - "3306:3306"
+    volumes:
+      # Volumen local opcional, solo para conservar datos entre `docker compose down/up`.
+      # Se puede quitar sin problema (equivalente al emptyDir usado en K8s).
+      - mysql-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-proot_dev_password"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    networks:
+      - app-network
+
+  # IMPORTANTE: el nombre de este servicio debe ser EXACTAMENTE "backend-ventas"
+  # porque front_despacho/nginx.conf hace proxy_pass a ese hostname literal.
+  backend-ventas:
+    build:
+      context: ./back-Ventas_SpringBoot/Springboot-API-REST
+    environment:
+      DB_ENDPOINT: mysql
+      DB_PORT: "3306"
+      DB_NAME: ventas_db
+      DB_USERNAME: root
+      DB_PASSWORD: root_dev_password
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - app-network
+
+  # IMPORTANTE: el nombre de este servicio debe ser EXACTAMENTE "backend-despachos"
+  # porque front_despacho/nginx.conf hace proxy_pass a ese hostname literal.
+  backend-despachos:
+    build:
+      context: ./back-Despachos_SpringBoot/Springboot-API-REST-DESPACHO
+    environment:
+      DB_ENDPOINT: mysql
+      DB_PORT: "3306"
+      DB_NAME: despachos_db
+      DB_USERNAME: root
+      DB_PASSWORD: root_dev_password
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - app-network
+
+  frontend:
+    build:
+      context: ./front_despacho
+    ports:
+      - "8080:80"
+    depends_on:
+      - backend-ventas
+      - backend-despachos
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    driver: bridge
+
+volumes:
+  mysql-data:
