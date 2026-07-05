@@ -81,4 +81,4 @@ jobs:
             --namespace sistema-despachos
           kubectl rollout status deployment/backend-despachos \
             --namespace sistema-despachos \
-            --timeout=120s
+            --timeout=300s
