@@ -18,7 +18,7 @@ spec:
       containers:
         - name: frontend
           # El pipeline deploy-frontend.yml sobreescribe este tag con ${{ github.sha }}
-          image: <ECR_REGISTRY>/sistema-despachos-frontend:latest
+          image: 218020533514.dkr.ecr.us-east-1.amazonaws.com/sistema-despachos-frontend:latest
           ports:
             - containerPort: 80
           # No requiere variables de entorno: el proxy Nginx está embebido en la imagen

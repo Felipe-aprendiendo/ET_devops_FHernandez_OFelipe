@@ -18,7 +18,7 @@ spec:
       containers:
         - name: backend-despachos
           # El pipeline deploy-backend-despachos.yml sobreescribe este tag con ${{ github.sha }}
-          image: <ECR_REGISTRY>/sistema-despachos-despachos:latest
+          image: 218020533514.dkr.ecr.us-east-1.amazonaws.com/sistema-despachos-despachos:latest
           ports:
             - containerPort: 8081
           envFrom:
