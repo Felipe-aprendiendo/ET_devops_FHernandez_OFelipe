@@ -70,3 +70,4 @@ Kubernetes. El Service `frontend` de tipo `LoadBalancer` crea automáticamente u
 Network Load Balancer en AWS para exponer la app al exterior.
 
 Manifiestos: [`k8s/30-frontend-deployment.yaml`](../k8s/30-frontend-deployment.yaml), [`k8s/31-frontend-service.yaml`](../k8s/31-frontend-service.yaml), [`k8s/32-frontend-hpa.yaml`](../k8s/32-frontend-hpa.yaml)
+# retry Sun Jul  5 03:42:12 UTC 2026
