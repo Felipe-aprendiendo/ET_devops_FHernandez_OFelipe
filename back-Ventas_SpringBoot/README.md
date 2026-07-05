@@ -83,3 +83,4 @@ tipo `ClusterIP` — no se expone directamente a Internet; solo el frontend (Ngi
 puede llamarlo internamente.
 
 Manifiestos: [`k8s/10-backend-ventas-deployment.yaml`](../k8s/10-backend-ventas-deployment.yaml), [`k8s/11-backend-ventas-service.yaml`](../k8s/11-backend-ventas-service.yaml), [`k8s/12-backend-ventas-hpa.yaml`](../k8s/12-backend-ventas-hpa.yaml)
+# trigger inicial de pipeline Sun Jul  5 03:04:18 UTC 2026
